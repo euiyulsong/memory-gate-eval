@@ -9,7 +9,7 @@ python -m pip install -r requirements.txt
 export OPENAI_API_KEY='본인 키'
 python eval.py run
 ```
-기본 모델 gpt-6-luna, reasoning effort none, 동시성 4. --model, --workers로 변경 가능. 모델 출력은 0 또는 1 한 글자만 지시합니다. 엄격한 검사에서 다른 문자열은 invalid 처리하고 정확도에서는 오답 처리합니다. JSON이나 regex로 숫자를 추출해 보정하지 않습니다.
+기본 모델 gpt-6-luna, reasoning effort none, 동시성 4. --model, --workers, --max-output-tokens로 변경 가능. 프롬프트는 불필요한 검색을 줄이도록 precision 우선 기준을 명시하지만, 필요한 과거 개인 정보를 추측하지 말고 검색하도록 합니다. 모델 출력은 0 또는 1 한 글자만 지시합니다. 엄격한 검사에서 다른 문자열은 invalid 처리하고 정확도에서는 오답 처리합니다. JSON이나 regex로 숫자를 추출해 보정하지 않습니다.
 
 ## 라벨 정의
 1: 현재 보이는 문맥만으로 부족하며, 이전 대화에 저장된 사실/선호/사건 검색이 필요.
