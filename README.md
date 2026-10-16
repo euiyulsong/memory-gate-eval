@@ -25,6 +25,8 @@ output/predictions.jsonl: 원문, 예측, raw 출력, 오류, 호출 ID, 실제 
 output/summary.json: 전체/출처별 정확도, precision/recall/F1, TP/TN/FP/FN, invalid, 불필요 검색률(FP/음성 수), 검색 누락률(FN/양성 수), latency mean/p95, always/never search 기준선.
 invalid는 별도 집계. 양성 invalid는 recall 분모에 포함되지만 FN에는 포함하지 않으므로 missed_search_rate와 positive_invalid를 함께 확인할 것. API 오류는 invalid로 집계하며 지연시간 통계에서 제외. SDK 재시도 성공 시 지연시간은 재시도 포함.
 
+프롬프트 v2는 `current_user_request`의 가장 마지막 질문/요청만 분류하고, 답변·수정·설명은 하지 않도록 지정한다. v2 재실행은 기존 결과를 덮어쓰지 않고 `output/prompt_v2/`에 저장한다.
+
 ## 해석 한계
 이것은 1차 smoke benchmark. 출처와 라벨이 일치하고 지문 유무/길이가 다르므로 shortcut 가능. 높은 점수만으로 실제 개인화 질의의 검색 판단 성능을 주장할 수 없음. 특히 한국어, 최근 대화에 이미 답이 있는 개인 질문, 개인화가 선택적인 추천, 단순 지시/인사 등 hard negative는 별도 수동 라벨 세트가 필요. 본 평가는 retrieval 여부만 평가하며 retrieval 품질/최종 답변 EM은 측정하지 않음. 항상 검색/항상 미검색 정확도는 각 50%.
 
@@ -74,3 +76,9 @@ invalid 응답을 제외한 뒤 single/multi 모수와 클래스 비율도 맞�
 | multi (동일 모수/비율) | 193 | 99 | 94 | 76.17% | 69.1% | 97.0% |
 
 멀티턴은 동일 target의 두 조건을 짝지은 데이터이므로, 한 조건이라도 invalid인 target을 양쪽에서 함께 제외한 paired 분석도 제공합니다. 해당 분석은 target 94쌍(188행), precision 67.9%, recall 96.8%입니다. 동일 모수 비교의 상세 값은 `summary.json`의 `by_mode_equal_balanced_valid_only`에 있습니다.
+
+
+## Prompt v3 failure-case follow-up
+멀티턴 v2 오답을 분석해 프롬프트를 보강했습니다: 개인 이력 질문과 일반 조언/추천을 구분하고, visible context에 실제 답이 있는지 확인하도록 했습니다. 코드는 `PROMPT_V3`로 추가했습니다. 실행 결과는 평가셋이 들어 있는 기존 `output/prompt_v2/` 디렉터리에 저장되었으며, 기존 사례 파일은 그대로입니다. 같은 평가셋을 프롬프트 개선에 사용했으므로 점수는 탐색적이며 독립 검증이 아닙니다.
+
+같은 400건에서 v3 strict accuracy는 전체 75.75%(v2: 83.25%), multi 60.0%(v2: 69.5%), single 91.5%(v2: 97.0%)였습니다. Multi에서 false positive 60건, invalid 14건이 발생했습니다. 따라서 이 오답 기반 프롬프트 변경은 정확도를 높이지 못했고, 특히 multi 결과를 악화시켰습니다. 원 데이터의 출처와 라벨이 얽힌 한계도 그대로이므로 독립 데이터로 검증해야 합니다.

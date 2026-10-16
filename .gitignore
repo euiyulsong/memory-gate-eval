@@ -3,3 +3,4 @@ __pycache__/
 .venv/
 .env
 output/predictions.jsonl
+output/prompt_*/predictions.jsonl
