@@ -52,3 +52,14 @@ https://developers.openai.com/api/docs/models/gpt-6-luna
 이 조합은 원본에 있던 자연스러운 연속 대화가 아니라 평가용으로 재구성한 문맥 조건임. multi/1에서 다른 세션의 우연한 답변 가능성은 수동 검수하지 않았음. multi/0의 전체 근거 노출은 recent-history 충분성 조건이며 원래 LongMemEval QA 평가와 다름. 두 모드의 난이도/문맥 분포가 달라 단순 차이를 순수 멀티턴 효과로 해석할 수 없음.
 summary.json의 by_mode에 single/multi 성능, by_condition에 네 조합별 정확도/invalid/지연시간을 저장. 클래스 하나뿐인 그룹의 precision/F1 등은 비교 목적에 적합하지 않으며 정확도와 오류율을 확인할 것.
 기존 데이터 원본 2개는 zip에서 제외하고 고정 400개와 manifest를 포함.
+
+## 실험 결과 (2026-10-16)
+gpt-6-luna, reasoning effort none, 400건 평가. `output/summary.json`에 전체 metric이 있고 로컬의 `output/predictions.jsonl`에는 개별 API 응답이 저장됩니다(요청 원문/모델 응답을 포함하므로 공개 저장소에는 올리지 않음).
+
+| 모드 | 엄격 정확도 | Precision | Recall | Invalid |
+|---|---:|---:|---:|---:|
+| 전체 (400) | 65.0% | 79.3% | 95.5% | 81 (20.25%) |
+| single (200) | 68.0% | 88.2% | 97.0% | 48 |
+| multi (200) | 62.0% | 71.8% | 94.0% | 33 |
+
+81건의 invalid 응답은 모두 음성(검색 불필요) 사례에서 발생했습니다. strict accuracy는 invalid를 오답 처리합니다. 출처와 라벨/문맥이 confounded된 smoke benchmark이므로 이 결과를 실제 사용자 질의 성능으로 일반화하면 안 됩니다.
