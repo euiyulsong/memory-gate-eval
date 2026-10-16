@@ -59,10 +59,8 @@ gpt-6-luna, reasoning effort none, 400건 평가. `output/summary.json`에 전�
 
 | 모드 | 엄격 정확도 | Precision | Recall | Invalid |
 |---|---:|---:|---:|---:|
-| 조건 | 전체 | 양성 (검색 필요) | 음성 (검색 불필요) | Invalid | 엄격 정확도 |
-|---|---:|---:|---:|---:|---:|
-| 전체 | 400 | 200 | 200 | 19 | 77.25% |
-| single | 200 | 100 | 100 | 17 | 87.0% |
-| multi | 200 | 100 | 100 | 2 | 67.5% |
+| 전체 (400) | 77.25% | 75.2% | 95.5% | 19 (4.75%) |
+| single (200) | 87.0% | 96.0% | 95.0% | 17 |
+| multi (200) | 67.5% | 61.9% | 96.0% | 2 |
 
-각 조건의 양성/음성 모수는 각각 100건입니다. invalid는 모델이 0 또는 1 이외의 형식으로 응답한 건수이며, 음성 중 전체 19건(single 17, multi 2)이었습니다. 엄격 정확도는 invalid를 오답으로 포함해 전체 건수를 분모로 계산합니다. 기존 프롬프트 대비 strict accuracy는 65.0%에서 77.25%로, invalid는 81건에서 19건으로 바뀌었습니다. 전체 precision은 79.3%에서 75.2%로 낮아졌고 recall은 95.5%로 동일합니다. 즉 전체 기준으로 precision/recall tradeoff 개선은 확인되지 않았으며, multi 조건에서 불필요 검색률이 59%로 높습니다. 출처와 라벨/문맥이 confounded된 smoke benchmark이므로 이 결과를 실제 사용자 질의 성능으로 일반화하면 안 됩니다.
+기존 프롬프트 대비 strict accuracy는 65.0%에서 77.25%로, invalid는 81건에서 19건으로 바뀌었습니다. 전체 precision은 79.3%에서 75.2%로 낮아졌고 recall은 95.5%로 동일합니다. 즉 전체 기준으로 precision/recall tradeoff 개선은 확인되지 않았으며, multi 조건에서 불필요 검색률이 59%로 높습니다. 19건의 invalid 응답은 모두 음성(검색 불필요) 사례에서 발생했습니다. strict accuracy는 invalid를 오답 처리합니다. 출처와 라벨/문맥이 confounded된 smoke benchmark이므로 이 결과를 실제 사용자 질의 성능으로 일반화하면 안 됩니다.
