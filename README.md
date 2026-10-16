@@ -54,25 +54,23 @@ summary.json의 by_mode에 single/multi 성능, by_condition에 네 조합별 �
 추가로 by_mode_valid_only는 invalid를 뺀 단순 모드별 유효 응답 결과이며, multi_paired_valid_only는 multi의 같은 질문 쌍(label 0/1) 중 하나라도 invalid이면 두 행 모두 제외한 균형 비교 결과다. 제외된 pair 수는 multi_paired_excluded_targets에 기록한다. 원래 전체 결과와 invalid 수는 overall/by_mode에 그대로 보존한다.
 기존 데이터 원본 2개는 zip에서 제외하고 고정 400개와 manifest를 포함.
 
-## 실험 결과 (2026-10-16, precision 우선 프롬프트)
+## 실험 결과 (2026-10-16, 최근 문맥 명시 프롬프트 v2)
 gpt-6-luna, reasoning effort none, 400건 평가. `output/summary.json`에 전체 metric이 있고 로컬의 `output/predictions.jsonl`에는 개별 API 응답이 저장됩니다(요청 원문/모델 응답을 포함하므로 공개 저장소에는 올리지 않음).
 
 | 모드 | 엄격 정확도 | Precision | Recall | Invalid |
 |---|---:|---:|---:|---:|
-| 전체 (400) | 77.25% | 75.2% | 95.5% | 19 (4.75%) |
-| single (200) | 87.0% | 96.0% | 95.0% | 17 |
-| multi (200) | 67.5% | 61.9% | 96.0% | 2 |
+| 전체 (400) | 83.0% | 80.3% | 95.5% | 13 (3.25%) |
+| single (200) | 92.5% | 96.0% | 95.0% | 6 |
+| multi (200) | 73.5% | 69.1% | 96.0% | 7 |
 
-기존 프롬프트 대비 strict accuracy는 65.0%에서 77.25%로, invalid는 81건에서 19건으로 바뀌었습니다. 전체 precision은 79.3%에서 75.2%로 낮아졌고 recall은 95.5%로 동일합니다. 즉 전체 기준으로 precision/recall tradeoff 개선은 확인되지 않았으며, multi 조건에서 불필요 검색률이 59%로 높습니다. 19건의 invalid 응답은 모두 음성(검색 불필요) 사례에서 발생했습니다. strict accuracy는 invalid를 오답 처리합니다. 출처와 라벨/문맥이 confounded된 smoke benchmark이므로 이 결과를 실제 사용자 질의 성능으로 일반화하면 안 됩니다.
+이전 precision 우선 프롬프트(v1) 대비 strict accuracy는 77.25%에서 83.0%로, invalid는 19건에서 13건으로 개선됐습니다. 전체 precision은 75.2%에서 80.3%, recall은 95.5%로 동일합니다. multi precision은 v1의 61.9%에서 69.1%로 올랐지만 single precision 96.0%보다 여전히 낮습니다. strict accuracy는 invalid를 오답 처리합니다. 출처와 라벨/문맥이 confounded된 smoke benchmark이므로 이 결과를 실제 사용자 질의 성능으로 일반화하면 안 됩니다.
 
 ### Invalid 제외 및 동일 모수 비교
-invalid 응답을 제외한 뒤 single/multi 모수와 클래스 비율도 맞춘 비교입니다. 두 모드 모두 각 모드별 invalid를 제외했고, 유효 문항 수가 적은 single에 맞춰 multi의 음성 문항을 고정 seed=42로 표본 추출했습니다. 각 모드는 동일한 183건(양성 100, 음성 83)입니다. Invalid 제외는 사후 필터링이므로 성능을 낙관적으로 만들 수 있습니다.
+invalid 응답을 제외한 뒤 single/multi 모수와 클래스 비율도 맞춘 비교입니다. 두 모드 모두 각 모드별 invalid를 제외했고, 유효 문항 수가 적은 multi 음성에 맞춰 single 음성을 고정 seed=42로 표본 추출했습니다. 각 모드는 동일한 193건(양성 99, 음성 94)입니다. Invalid 제외는 사후 필터링이므로 성능을 낙관적으로 만들 수 있습니다.
 
 | 조건 | 유효 N | 검색 필요 양성 | 검색 불필요 음성 | Accuracy | Precision | Recall |
 |---|---:|---:|---:|---:|---:|---:|
-| 조건 | 유효 N | 검색 필요 양성 | 검색 불필요 음성 | Accuracy | Precision | Recall |
-|---|---:|---:|---:|---:|---:|---:|
-| single | 183 | 100 | 83 | 95.08% | 96.0% | 95.0% |
-| multi (동일 모수/비율) | 183 | 100 | 83 | 69.40% | 64.9% | 96.0% |
+| single | 193 | 99 | 94 | 95.34% | 95.9% | 94.9% |
+| multi (동일 모수/비율) | 193 | 99 | 94 | 76.17% | 69.1% | 97.0% |
 
-멀티턴은 동일 target의 두 조건을 짝지은 데이터이므로, 한 조건이라도 invalid인 target을 양쪽에서 함께 제외한 paired 분석도 제공합니다. 해당 분석은 target 98쌍(196행), precision 61.4%, recall 95.9%입니다. 동일 모수 비교의 상세 값은 `summary.json`의 `by_mode_equal_balanced_valid_only`에 있습니다.
+멀티턴은 동일 target의 두 조건을 짝지은 데이터이므로, 한 조건이라도 invalid인 target을 양쪽에서 함께 제외한 paired 분석도 제공합니다. 해당 분석은 target 94쌍(188행), precision 67.9%, recall 96.8%입니다. 동일 모수 비교의 상세 값은 `summary.json`의 `by_mode_equal_balanced_valid_only`에 있습니다.
