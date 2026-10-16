@@ -53,13 +53,13 @@ https://developers.openai.com/api/docs/models/gpt-6-luna
 summary.json의 by_mode에 single/multi 성능, by_condition에 네 조합별 정확도/invalid/지연시간을 저장. 클래스 하나뿐인 그룹의 precision/F1 등은 비교 목적에 적합하지 않으며 정확도와 오류율을 확인할 것.
 기존 데이터 원본 2개는 zip에서 제외하고 고정 400개와 manifest를 포함.
 
-## 실험 결과 (2026-10-16)
+## 실험 결과 (2026-10-16, precision 우선 프롬프트)
 gpt-6-luna, reasoning effort none, 400건 평가. `output/summary.json`에 전체 metric이 있고 로컬의 `output/predictions.jsonl`에는 개별 API 응답이 저장됩니다(요청 원문/모델 응답을 포함하므로 공개 저장소에는 올리지 않음).
 
 | 모드 | 엄격 정확도 | Precision | Recall | Invalid |
 |---|---:|---:|---:|---:|
-| 전체 (400) | 65.0% | 79.3% | 95.5% | 81 (20.25%) |
-| single (200) | 68.0% | 88.2% | 97.0% | 48 |
-| multi (200) | 62.0% | 71.8% | 94.0% | 33 |
+| 전체 (400) | 77.25% | 75.2% | 95.5% | 19 (4.75%) |
+| single (200) | 87.0% | 96.0% | 95.0% | 17 |
+| multi (200) | 67.5% | 61.9% | 96.0% | 2 |
 
-81건의 invalid 응답은 모두 음성(검색 불필요) 사례에서 발생했습니다. strict accuracy는 invalid를 오답 처리합니다. 출처와 라벨/문맥이 confounded된 smoke benchmark이므로 이 결과를 실제 사용자 질의 성능으로 일반화하면 안 됩니다.
+기존 프롬프트 대비 strict accuracy는 65.0%에서 77.25%로, invalid는 81건에서 19건으로 바뀌었습니다. 전체 precision은 79.3%에서 75.2%로 낮아졌고 recall은 95.5%로 동일합니다. 즉 전체 기준으로 precision/recall tradeoff 개선은 확인되지 않았으며, multi 조건에서 불필요 검색률이 59%로 높습니다. 19건의 invalid 응답은 모두 음성(검색 불필요) 사례에서 발생했습니다. strict accuracy는 invalid를 오답 처리합니다. 출처와 라벨/문맥이 confounded된 smoke benchmark이므로 이 결과를 실제 사용자 질의 성능으로 일반화하면 안 됩니다.
