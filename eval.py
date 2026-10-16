@@ -85,6 +85,18 @@ def metrics(rows):
   'p95_latency_seconds':sorted(lat)[max(0,int(.95*len(lat)+.999)-1)] if lat else None,
   'always_search_accuracy':pos/len(rows),'never_search_accuracy':neg/len(rows)}
 
+def paired_valid_rows(rows):
+ # Each target has two multi conditions (label 0 and 1). Exclude both if
+ # either response is invalid, so the paired condition comparison stays balanced.
+ groups={}
+ for r in rows:
+  if r.get('mode')=='multi':
+   groups.setdefault(str(r['pair_id']),[]).append(r)
+ paired={k for k,group in groups.items()
+         if len(group)==2 and {r['label'] for r in group}=={0,1}
+         and all(r.get('prediction') in (0,1) for r in group)}
+ return [r for r in rows if r.get('mode')=='multi' and str(r['pair_id']) in paired]
+
 def run(out, model, workers, max_output_tokens):
  from openai import OpenAI
  if not os.getenv('OPENAI_API_KEY'): raise SystemExit('Set OPENAI_API_KEY locally. No model calls made.')
@@ -106,9 +118,16 @@ def run(out, model, workers, max_output_tokens):
  with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex, (out/'predictions.jsonl').open('w') as f:
   for r in ex.map(predict,rows):
    results.append(r); f.write(json.dumps(r,ensure_ascii=False)+'\n'); f.flush()
- summary={'model_requested':model,'reasoning_effort':'none','overall':metrics(results),
-  'by_mode':{mode:metrics([r for r in results if r['mode']==mode]) for mode in ['single','multi']},
-  'by_condition':{f'{mode}_{label}':metrics([r for r in results if r['mode']==mode and r['label']==label]) for mode in ['single','multi'] for label in [0,1]},
+  fair_multi=paired_valid_rows(results)
+  valid_results=[r for r in results if r.get('prediction') in (0,1)]
+  summary={'model_requested':model,'reasoning_effort':'none','overall':metrics(results),
+    'by_mode':{mode:metrics([r for r in results if r['mode']==mode]) for mode in ['single','multi']},
+    'by_mode_valid_only':{mode:metrics([r for r in results if r['mode']==mode and r.get('prediction') in (0,1)]) for mode in ['single','multi']},
+    'overall_valid_only':metrics(valid_results),
+    'by_condition_valid_only':{f'{mode}_{label}':metrics([r for r in results if r['mode']==mode and r['label']==label and r.get('prediction') in (0,1)]) for mode in ['single','multi'] for label in [0,1]},
+   'multi_paired_valid_only':metrics(fair_multi),
+   'multi_paired_excluded_targets':len({str(r['pair_id']) for r in results if r.get('mode')=='multi'})-len({str(r['pair_id']) for r in fair_multi}),
+   'by_condition':{f'{mode}_{label}':metrics([r for r in results if r['mode']==mode and r['label']==label]) for mode in ['single','multi'] for label in [0,1]},
   'by_source':{s:metrics([r for r in results if r['source']==s]) for s in sorted({r['source'] for r in results})}}
  dump(out/'summary.json',summary); print(json.dumps(summary,indent=2))
 
