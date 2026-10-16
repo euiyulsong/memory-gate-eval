@@ -51,6 +51,7 @@ https://developers.openai.com/api/docs/models/gpt-6-luna
 멀티턴 길이는 원본 세션 길이를 따르며 고정 5턴이 아님. 여러 oracle 세션이 있으면 이어서 제공. 마지막 질문에 대한 0/1만 평가.
 이 조합은 원본에 있던 자연스러운 연속 대화가 아니라 평가용으로 재구성한 문맥 조건임. multi/1에서 다른 세션의 우연한 답변 가능성은 수동 검수하지 않았음. multi/0의 전체 근거 노출은 recent-history 충분성 조건이며 원래 LongMemEval QA 평가와 다름. 두 모드의 난이도/문맥 분포가 달라 단순 차이를 순수 멀티턴 효과로 해석할 수 없음.
 summary.json의 by_mode에 single/multi 성능, by_condition에 네 조합별 정확도/invalid/지연시간을 저장. 클래스 하나뿐인 그룹의 precision/F1 등은 비교 목적에 적합하지 않으며 정확도와 오류율을 확인할 것.
+추가로 by_mode_valid_only는 invalid를 뺀 단순 모드별 유효 응답 결과이며, multi_paired_valid_only는 multi의 같은 질문 쌍(label 0/1) 중 하나라도 invalid이면 두 행 모두 제외한 균형 비교 결과다. 제외된 pair 수는 multi_paired_excluded_targets에 기록한다. 원래 전체 결과와 invalid 수는 overall/by_mode에 그대로 보존한다.
 기존 데이터 원본 2개는 zip에서 제외하고 고정 400개와 manifest를 포함.
 
 ## 실험 결과 (2026-10-16, precision 우선 프롬프트)
@@ -58,8 +59,10 @@ gpt-6-luna, reasoning effort none, 400건 평가. `output/summary.json`에 전�
 
 | 모드 | 엄격 정확도 | Precision | Recall | Invalid |
 |---|---:|---:|---:|---:|
-| 전체 (400) | 77.25% | 75.2% | 95.5% | 19 (4.75%) |
-| single (200) | 87.0% | 96.0% | 95.0% | 17 |
-| multi (200) | 67.5% | 61.9% | 96.0% | 2 |
+| 조건 | 전체 | 양성 (검색 필요) | 음성 (검색 불필요) | Invalid | 엄격 정확도 |
+|---|---:|---:|---:|---:|---:|
+| 전체 | 400 | 200 | 200 | 19 | 77.25% |
+| single | 200 | 100 | 100 | 17 | 87.0% |
+| multi | 200 | 100 | 100 | 2 | 67.5% |
 
-기존 프롬프트 대비 strict accuracy는 65.0%에서 77.25%로, invalid는 81건에서 19건으로 바뀌었습니다. 전체 precision은 79.3%에서 75.2%로 낮아졌고 recall은 95.5%로 동일합니다. 즉 전체 기준으로 precision/recall tradeoff 개선은 확인되지 않았으며, multi 조건에서 불필요 검색률이 59%로 높습니다. 19건의 invalid 응답은 모두 음성(검색 불필요) 사례에서 발생했습니다. strict accuracy는 invalid를 오답 처리합니다. 출처와 라벨/문맥이 confounded된 smoke benchmark이므로 이 결과를 실제 사용자 질의 성능으로 일반화하면 안 됩니다.
+각 조건의 양성/음성 모수는 각각 100건입니다. invalid는 모델이 0 또는 1 이외의 형식으로 응답한 건수이며, 음성 중 전체 19건(single 17, multi 2)이었습니다. 엄격 정확도는 invalid를 오답으로 포함해 전체 건수를 분모로 계산합니다. 기존 프롬프트 대비 strict accuracy는 65.0%에서 77.25%로, invalid는 81건에서 19건으로 바뀌었습니다. 전체 precision은 79.3%에서 75.2%로 낮아졌고 recall은 95.5%로 동일합니다. 즉 전체 기준으로 precision/recall tradeoff 개선은 확인되지 않았으며, multi 조건에서 불필요 검색률이 59%로 높습니다. 출처와 라벨/문맥이 confounded된 smoke benchmark이므로 이 결과를 실제 사용자 질의 성능으로 일반화하면 안 됩니다.
