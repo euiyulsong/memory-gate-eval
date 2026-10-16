@@ -59,21 +59,21 @@ summary.json의 by_mode에 single/multi 성능, by_condition에 네 조합별 �
 ## 실험 결과 (2026-10-16, 최근 문맥 명시 프롬프트 v2)
 gpt-6-luna, reasoning effort none, 400건 평가. `output/summary.json`에 전체 metric이 있고 로컬의 `output/predictions.jsonl`에는 개별 API 응답이 저장됩니다(요청 원문/모델 응답을 포함하므로 공개 저장소에는 올리지 않음).
 
-| 모드 | 엄격 정확도 | Precision | Recall | Invalid |
-|---|---:|---:|---:|---:|
-| 전체 (400) | 83.0% | 80.3% | 95.5% | 13 (3.25%) |
-| single (200) | 92.5% | 96.0% | 95.0% | 6 |
-| multi (200) | 73.5% | 69.1% | 96.0% | 7 |
+| 모드 | 엄격 정확도 | Precision | Recall | F1 | Invalid |
+|---|---:|---:|---:|---:|---:|
+| 전체 (400) | 83.0% | 80.3% | 95.5% | 87.2% | 13 (3.25%) |
+| single (200) | 92.5% | 96.0% | 95.0% | 95.5% | 6 |
+| multi (200) | 73.5% | 69.1% | 96.0% | 80.3% | 7 |
 
 이전 precision 우선 프롬프트(v1) 대비 strict accuracy는 77.25%에서 83.0%로, invalid는 19건에서 13건으로 개선됐습니다. 전체 precision은 75.2%에서 80.3%, recall은 95.5%로 동일합니다. multi precision은 v1의 61.9%에서 69.1%로 올랐지만 single precision 96.0%보다 여전히 낮습니다. strict accuracy는 invalid를 오답 처리합니다. 출처와 라벨/문맥이 confounded된 smoke benchmark이므로 이 결과를 실제 사용자 질의 성능으로 일반화하면 안 됩니다.
 
 ### Invalid 제외 및 동일 모수 비교
 invalid 응답을 제외한 뒤 single/multi 모수와 클래스 비율도 맞춘 비교입니다. 두 모드 모두 각 모드별 invalid를 제외했고, 유효 문항 수가 적은 multi 음성에 맞춰 single 음성을 고정 seed=42로 표본 추출했습니다. 각 모드는 동일한 193건(양성 99, 음성 94)입니다. Invalid 제외는 사후 필터링이므로 성능을 낙관적으로 만들 수 있습니다.
 
-| 조건 | 유효 N | 검색 필요 양성 | 검색 불필요 음성 | Accuracy | Precision | Recall |
-|---|---:|---:|---:|---:|---:|---:|
-| single | 193 | 99 | 94 | 95.34% | 95.9% | 94.9% |
-| multi (동일 모수/비율) | 193 | 99 | 94 | 76.17% | 69.1% | 97.0% |
+| 조건 | 유효 N | 검색 필요 양성 | 검색 불필요 음성 | Accuracy | Precision | Recall | F1 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| single | 193 | 99 | 94 | 95.34% | 95.9% | 94.9% | 95.4% |
+| multi (동일 모수/비율) | 193 | 99 | 94 | 76.17% | 69.1% | 97.0% | 80.7% |
 
 멀티턴은 동일 target의 두 조건을 짝지은 데이터이므로, 한 조건이라도 invalid인 target을 양쪽에서 함께 제외한 paired 분석도 제공합니다. 해당 분석은 target 94쌍(188행), precision 67.9%, recall 96.8%입니다. 동일 모수 비교의 상세 값은 `summary.json`의 `by_mode_equal_balanced_valid_only`에 있습니다.
 
@@ -81,4 +81,4 @@ invalid 응답을 제외한 뒤 single/multi 모수와 클래스 비율도 맞�
 ## Prompt v3 failure-case follow-up
 멀티턴 v2 오답을 분석해 프롬프트를 보강했습니다: 개인 이력 질문과 일반 조언/추천을 구분하고, visible context에 실제 답이 있는지 확인하도록 했습니다. 코드는 `PROMPT_V3`로 추가했습니다. 실행 결과는 평가셋이 들어 있는 기존 `output/prompt_v2/` 디렉터리에 저장되었으며, 기존 사례 파일은 그대로입니다. 같은 평가셋을 프롬프트 개선에 사용했으므로 점수는 탐색적이며 독립 검증이 아닙니다.
 
-같은 400건에서 v3 strict accuracy는 전체 75.75%(v2: 83.25%), multi 60.0%(v2: 69.5%), single 91.5%(v2: 97.0%)였습니다. Multi에서 false positive 60건, invalid 14건이 발생했습니다. 따라서 이 오답 기반 프롬프트 변경은 정확도를 높이지 못했고, 특히 multi 결과를 악화시켰습니다. 원 데이터의 출처와 라벨이 얽힌 한계도 그대로이므로 독립 데이터로 검증해야 합니다.
+같은 400건에서 v3 strict accuracy는 전체 75.75%(v2: 83.25%), multi 60.0%(v2: 69.5%), single 91.5%(v2: 97.0%)였습니다. 전체 F1은 83.5%, single 96.4%, multi 73.5%였습니다. Multi에서 false positive 60건, invalid 14건이 발생했습니다. 따라서 이 오답 기반 프롬프트 변경은 정확도를 높이지 못했고, 특히 multi 결과를 악화시켰습니다. 원 데이터의 출처와 라벨이 얽힌 한계도 그대로이므로 독립 데이터로 검증해야 합니다.
