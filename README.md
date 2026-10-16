@@ -65,13 +65,14 @@ gpt-6-luna, reasoning effort none, 400건 평가. `output/summary.json`에 전�
 
 기존 프롬프트 대비 strict accuracy는 65.0%에서 77.25%로, invalid는 81건에서 19건으로 바뀌었습니다. 전체 precision은 79.3%에서 75.2%로 낮아졌고 recall은 95.5%로 동일합니다. 즉 전체 기준으로 precision/recall tradeoff 개선은 확인되지 않았으며, multi 조건에서 불필요 검색률이 59%로 높습니다. 19건의 invalid 응답은 모두 음성(검색 불필요) 사례에서 발생했습니다. strict accuracy는 invalid를 오답 처리합니다. 출처와 라벨/문맥이 confounded된 smoke benchmark이므로 이 결과를 실제 사용자 질의 성능으로 일반화하면 안 됩니다.
 
-### Invalid 제외 분석
-요청에 따라 invalid 응답 문항을 제외하고 유효한 0/1 응답만으로 다시 집계한 값입니다. 따라서 모수는 single 183, multi 198이며, invalid 제외는 사후 필터링이므로 성능을 낙관적으로 만들 수 있습니다.
+### Invalid 제외 및 동일 모수 비교
+invalid 응답을 제외한 뒤 single/multi 모수와 클래스 비율도 맞춘 비교입니다. 두 모드 모두 각 모드별 invalid를 제외했고, 유효 문항 수가 적은 single에 맞춰 multi의 음성 문항을 고정 seed=42로 표본 추출했습니다. 각 모드는 동일한 183건(양성 100, 음성 83)입니다. Invalid 제외는 사후 필터링이므로 성능을 낙관적으로 만들 수 있습니다.
 
 | 조건 | 유효 N | 검색 필요 양성 | 검색 불필요 음성 | Accuracy | Precision | Recall |
 |---|---:|---:|---:|---:|---:|---:|
-| 전체 | 381 | 200 | 181 | 81.10% | 75.2% | 95.5% |
+| 조건 | 유효 N | 검색 필요 양성 | 검색 불필요 음성 | Accuracy | Precision | Recall |
+|---|---:|---:|---:|---:|---:|---:|
 | single | 183 | 100 | 83 | 95.08% | 96.0% | 95.0% |
-| multi | 198 | 100 | 98 | 68.18% | 61.9% | 96.0% |
+| multi (동일 모수/비율) | 183 | 100 | 83 | 69.40% | 64.9% | 96.0% |
 
-멀티턴은 동일 target의 두 조건을 짝지은 데이터이므로, 한 조건이라도 invalid인 target을 양쪽에서 함께 제외한 paired 분석도 제공합니다. 해당 분석은 target 98쌍(196행), precision 61.4%, recall 95.9%입니다. 자세한 값은 `summary.json`의 `by_mode_valid_only`, `overall_valid_only`, `multi_paired_valid_only`에 있습니다.
+멀티턴은 동일 target의 두 조건을 짝지은 데이터이므로, 한 조건이라도 invalid인 target을 양쪽에서 함께 제외한 paired 분석도 제공합니다. 해당 분석은 target 98쌍(196행), precision 61.4%, recall 95.9%입니다. 동일 모수 비교의 상세 값은 `summary.json`의 `by_mode_equal_balanced_valid_only`에 있습니다.

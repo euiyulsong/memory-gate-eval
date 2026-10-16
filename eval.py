@@ -120,9 +120,25 @@ def run(out, model, workers, max_output_tokens):
    results.append(r); f.write(json.dumps(r,ensure_ascii=False)+'\n'); f.flush()
   fair_multi=paired_valid_rows(results)
   valid_results=[r for r in results if r.get('prediction') in (0,1)]
+  # Equal-size, class-balanced comparison: keep only label classes present in
+  # both modes after invalid outputs are removed, then downsample each mode to
+  # the same per-label count using a deterministic seed.
+  valid_by_mode={mode:[r for r in valid_results if r.get('mode')==mode] for mode in ['single','multi']}
+  common_per_label={label:min(sum(r['label']==label for r in valid_by_mode[mode]) for mode in ['single','multi']) for label in [0,1]}
+  rng=random.Random(42)
+  balanced_by_mode={}
+  for mode in ['single','multi']:
+   chosen=[]
+   for label in [0,1]:
+    pool=[r for r in valid_by_mode[mode] if r['label']==label]
+    chosen.extend(rng.sample(pool,common_per_label[label]))
+   balanced_by_mode[mode]=chosen
   summary={'model_requested':model,'reasoning_effort':'none','overall':metrics(results),
     'by_mode':{mode:metrics([r for r in results if r['mode']==mode]) for mode in ['single','multi']},
     'by_mode_valid_only':{mode:metrics([r for r in results if r['mode']==mode and r.get('prediction') in (0,1)]) for mode in ['single','multi']},
+    'by_mode_equal_balanced_valid_only':{mode:metrics(balanced_by_mode[mode]) for mode in ['single','multi']},
+    'equal_balanced_valid_n_per_mode':{mode:len(balanced_by_mode[mode]) for mode in ['single','multi']},
+    'equal_balanced_valid_n_per_label':common_per_label,
     'overall_valid_only':metrics(valid_results),
     'by_condition_valid_only':{f'{mode}_{label}':metrics([r for r in results if r['mode']==mode and r['label']==label and r.get('prediction') in (0,1)]) for mode in ['single','multi'] for label in [0,1]},
    'multi_paired_valid_only':metrics(fair_multi),
